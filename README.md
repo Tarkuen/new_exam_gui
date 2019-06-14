@@ -1,2 +1,2 @@
-# new_exam_gui
-Revised version of the Python Exam GUI
+# PythonExamGui
+Chat App - Using TKinter and sockets
