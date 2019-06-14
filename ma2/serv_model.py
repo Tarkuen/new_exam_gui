@@ -74,7 +74,11 @@ class MyTCPServer:
                 
             for k,v in self.keywords.items():
                 if msg.find(k)!= -1:
-                    getattr(self, str(v))(msg=msg, client = client, sender=client.username)
+                    try:
+                        getattr(self, str(v))(msg=msg, client = client, sender=client.username)
+                    except AssertionError:
+                        client.socket.send(bytes("Not following protocol", "utf8"))
+                        
 
     def handle_broadcast(self, **kwargs):
         msg = kwargs.get('msg')
@@ -99,22 +103,39 @@ class MyTCPServer:
         assert msg.find('{') != -1
         assert msg.find('}') != -1
         recievers = []
-
-        start = msg.find('{')
-        end = msg.find('}')
-
-        submsg = msg[start+1 : end].split(',')
+        submsg = msg[msg.find('{')+1 : msg.find('}')].split(',')
 
         for t in submsg:
             recievers.append(t.strip(',').strip(' '))
-        
-        submsg = msg[end+1:]
+        submsg1 = msg[:msg.find('{')]
+        submsg = msg[msg.find('}')+1:]
+        submsg = submsg1+submsg
         [c.socket.send(bytes(client.username + ": (PRIVATE) "+submsg, 'utf8')) for rec in recievers for c in self.client_group if c.username == str(rec)]
 
     def handle_quit(self, **kwargs):
         pass
 
     def handle_file(self, **kwargs):
+
+        # for c in self.client_group:
+            #                 if c.username == target:
+            #                     username = f"{c.username}"
+            #                     keyword = str(self.keywords[1])
+            #                     target= f"{temp[2]}"
+            #                     msg = username+' '+keyword+' '+target
+            #                     c.socket.send(bytes( msg, "utf8"))
+
+            #                     print('routing data...')
+            #                     while True:
+            #                         fil = c.socket.recv(self.BUFSIZ)
+            #                         if fil[-4:] == bytes("done", 'utf8'):
+            #                             c.socket.send(fil[:-4])
+            #                             c.socket.send(bytes("done", 'utf8'))
+            #                             break
+            #                         else:
+            #                             c.socket.send(fil)
+            #                     print(f"Transferred file to {c.username} by type {temp[2]}")
+
         return "HANDLED FILE"
 
 
