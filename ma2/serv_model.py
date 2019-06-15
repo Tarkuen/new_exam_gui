@@ -128,7 +128,7 @@ class MyTCPServer:
         """
         client = kwargs.get('client')
         header = kwargs.get('msg')
-
+        print(header)
         client = self.client_group[client]
 
         recievers = []
@@ -144,10 +144,17 @@ class MyTCPServer:
         file_encoding = str(header.split("_", 2)[-1])
         print("Size: " + str(file_size) + " bytes" + "  Fileencoding: " + file_encoding)
 
-        file_object = client.socket.recv(self.BUFSIZ)
+        try:
+            [c.socket.send(bytes(header, 'utf8')) for rec in recievers for c in self.client_group if c.username == rec]
+        except ConnectionResetError:
+            pass
 
-        [c.socket.send(bytes(header, 'utf8')) for rec in recievers for c in self.client_group if c.username == str(rec)]
-        [c.socket.send(file_object) for rec in recievers for c in self.client_group if c.username == str(rec)]
+        file_object = client.socket.recv(self.BUFSIZ)
+        print(len(file_object))
+        try:
+            [c.socket.send(bytes(file_object)) for rec in recievers for c in self.client_group if c.username == rec]
+        except ConnectionResetError:
+            pass
 
         self.BUFSIZ = 1024
 
