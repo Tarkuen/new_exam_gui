@@ -1,4 +1,5 @@
 import json
+import os
 
 import tkinter as tk
 from threading import Thread
@@ -25,13 +26,22 @@ class TCPController:
 
         msg = self.view.my_msg.get()
 
-        if msg == self.keywords.get('@quit'):
+        if msg == "@quit":
             self.model.shutdown()
             self.view.top.quit()
 
         else:
-            if msg.find(self.keywords.get('@file')) != -1:
+            if msg.find("@file") != -1:
                 path = self.view.openfile()
+                file_size = os.path.getsize(path)
+
+                file_encoding = str(path.split('.', 1)[-1])
+                print(file_encoding)
+
+                file_msg = msg + "_" + str(file_size) + "_" + file_encoding
+                print(file_msg)
+                self.model.send(file_msg)
+
                 a = self.model.sendFile(path=path, my_msg=msg)
                 self.view.msg_list.insert(tk.END, a)
             else:

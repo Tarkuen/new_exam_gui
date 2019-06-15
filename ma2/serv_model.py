@@ -3,6 +3,7 @@ import json
 from socket import AF_INET, socket, SOCK_STREAM  # AF_INET & SOCK_STREAM for TCP sockets
 from threading import Thread
 
+
 class MyTCPServer:
 
     def __init__(self, adress='localhost', port=33000):
@@ -13,16 +14,17 @@ class MyTCPServer:
         self.BUFSIZ = 1024
         self.keywords = {}
         self.keywords = self.p.getKeywords()
-        
+
         self.connection_handler()
 
     def connection_handler(self):
         self.sock.bind(self.ADDR)
-        print("* "*3+" Server bound and listening on %s %s" % self.ADDR +" *"*3)
+        print("* " * 3 + " Server bound and listening on %s %s" % self.ADDR + " *" * 3)
 
         while True:
             self.sock.listen(5)
             c_id, c_a = self.sock.accept()
+
             client = Client(socket=c_id, address=c_a)
 
             msg = "%s:%s connected." % c_a
@@ -37,12 +39,12 @@ class MyTCPServer:
     def client_username_handler(self, c=None):
         client = self.client_group[c]
         try:
-            
+
             client.socket.send(bytes(" Please select Username (no spaces)", 'utf8'))
-        
+
         except ConnectionResetError:
             print('Incorrect Username Attempt')
-            del(self.client_group[c])
+            del (self.client_group[c])
 
         try:
             username = client.socket.recv(self.BUFSIZ).decode("utf-8")
@@ -51,7 +53,7 @@ class MyTCPServer:
 
         if username.find(' ') != -1:
             raise ConnectionResetError
-            
+
         msg = "Username connected: %s" % username
         client.socket.send(bytes(msg, 'utf8'))
 
@@ -66,28 +68,29 @@ class MyTCPServer:
         while True:
             try:
                 msg = client.socket.recv(self.BUFSIZ).decode('utf8')
+                print(msg)
             except ConnectionResetError:
                 print("Connection Dropped on %s %s " % client.address)
-                del self.client_group[c]
                 self.handle_broadcast(msg=msg)
+                del self.client_group[c]
+
                 break
-                
-            for k,v in self.keywords.items():
-                if msg.find(k)!= -1:
+
+            for k, v in self.keywords.items():
+                if msg.find(k) != -1:
                     try:
-                        getattr(self, str(v))(msg=msg, client = client, sender=client.username)
+                        getattr(self, str(v))(msg=msg, client=client, sender=client.username)
                     except AssertionError:
                         client.socket.send(bytes("Not following protocol", "utf8"))
-                        
 
     def handle_broadcast(self, **kwargs):
         msg = kwargs.get('msg')
         if kwargs.__contains__('sender'):
-            sender=kwargs.get('sender')
-        
+            sender = kwargs.get('sender')
+
         else:
-            sender="[+] ADMIN"
-        
+            sender = "[+] ADMIN"
+
         totalmsg = f"{sender} : {msg}"
         for client in self.client_group:  # Sender beskeden til alle klienter
             try:
@@ -96,6 +99,7 @@ class MyTCPServer:
                 continue
 
     def handle_private(self, **kwargs):
+        print("handle_private kaldt")
 
         msg = kwargs.get('msg')
         client = kwargs.get('client')
@@ -103,38 +107,67 @@ class MyTCPServer:
         assert msg.find('{') != -1
         assert msg.find('}') != -1
         recievers = []
-        submsg = msg[msg.find('{')+1 : msg.find('}')].split(',')
+        submsg = msg[msg.find('{') + 1: msg.find('}')].split(',')
 
         for t in submsg:
             recievers.append(t.strip(',').strip(' '))
+
         submsg1 = msg[:msg.find('{')]
-        submsg = msg[msg.find('}')+1:]
-        submsg = submsg1+submsg
-        [c.socket.send(bytes(client.username + ": (PRIVATE) "+submsg, 'utf8')) for rec in recievers for c in self.client_group if c.username == str(rec)]
+        submsg = msg[msg.find('}') + 1:]
+        submsg = submsg1 + submsg
+        [c.socket.send(bytes(client.username + ": (PRIVATE) " + submsg, 'utf8')) for rec in recievers for c in
+         self.client_group if c.username == str(rec)]
 
     def handle_quit(self, **kwargs):
         pass
 
     def handle_file(self, **kwargs):
+        print("handle_file kaldt")
+
+        client = kwargs.get('client')
+        header = kwargs.get('msg')
+
+        client = self.client_group[client]
+
+        recievers = []
+        submsg = header[header.find('{') + 1: header.find('}')].split(',')
+
+        for t in submsg:
+            recievers.append(t.strip(',').strip(' '))
+
+        file_size = int(header.split("_", 1)[-1].split("_", 1)[0])
+        self.BUFSIZ = file_size
+        file_encoding = str(header.split("_", 2)[-1])
+        print("Size: " + str(file_size) + " bytes" + "  Fileencoding: " + file_encoding)
+
+        file = client.socket.recv(self.BUFSIZ)
+        print(file)
+
+        [c.socket.send(bytes(header, 'utf8')) for rec in recievers for c in
+         self.client_group if c.username == str(rec)]
+
+        # [c.socket.send(file) for rec in recievers for c in self.client_group if c.username == str(rec)]
+
+        self.BUFSIZ = 1024
 
         # for c in self.client_group:
-            #                 if c.username == target:
-            #                     username = f"{c.username}"
-            #                     keyword = str(self.keywords[1])
-            #                     target= f"{temp[2]}"
-            #                     msg = username+' '+keyword+' '+target
-            #                     c.socket.send(bytes( msg, "utf8"))
+        #                 if c.username == target:
+        #                     username = f"{c.username}"
+        #                     keyword = str(self.keywords[1])
+        #                     target= f"{temp[2]}"
+        #                     msg = username+' '+keyword+' '+target
+        #                     c.socket.send(bytes( msg, "utf8"))
 
-            #                     print('routing data...')
-            #                     while True:
-            #                         fil = c.socket.recv(self.BUFSIZ)
-            #                         if fil[-4:] == bytes("done", 'utf8'):
-            #                             c.socket.send(fil[:-4])
-            #                             c.socket.send(bytes("done", 'utf8'))
-            #                             break
-            #                         else:
-            #                             c.socket.send(fil)
-            #                     print(f"Transferred file to {c.username} by type {temp[2]}")
+        #                     print('routing data...')
+        #                     while True:
+        #                         fil = c.socket.recv(self.BUFSIZ)
+        #                         if fil[-4:] == bytes("done", 'utf8'):
+        #                             c.socket.send(fil[:-4])
+        #                             c.socket.send(bytes("done", 'utf8'))
+        #                             break
+        #                         else:
+        #                             c.socket.send(fil)
+        #                     print(f"Transferred file to {c.username} by type {temp[2]}")
 
         return "HANDLED FILE"
 
@@ -178,6 +211,7 @@ class MyTCPServer:
             # else:
             #     self.broadcast(msg, sender=client.username) """
 
+
 class Client:
 
     def __init__(self, socket=None, address='', username=''):
@@ -189,15 +223,16 @@ class Client:
 class Protocol:
 
     def __init__(self):
-        self.keywords= {}
+        self.keywords = {}
         with open('protocol.json', 'r') as f:
             keys = json.load(f)
 
-        for k,v in keys.items():
-            self.keywords.update({k:v})
-        
+        for k, v in keys.items():
+            self.keywords.update({k: v})
+
     def getKeywords(self):
         return self.keywords
+
 
 if __name__ == "__main__":
     a = MyTCPServer()

@@ -1,4 +1,5 @@
 import socket
+import os
  
 def setUp():
     
@@ -6,9 +7,10 @@ def setUp():
         ADDR = ('localhost', 33000)
         BUFSIZ = 1024
         sock.connect(ADDR)
-
-        with open('C:/users/Tarkuen/Desktop/QR.png', 'rb') as f:
+        path = 'C:/Users/Ludvig/Pictures/hund.jpg'
+        with open(path , 'rb') as f:
             bf = f.read()
+            print(os.path.getsize(path))
             sock.sendall(bf,0)
 
         

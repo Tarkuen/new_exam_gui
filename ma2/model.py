@@ -22,12 +22,16 @@ class TCPClient:
 
         try:
             incoming_msg = self.sock.recv(self.BUFSIZ).decode('utf8')
-            if incoming_msg.find(self.keywords[1]) != -1:
+            if incoming_msg.find("@file_") != -1:
+                print(incoming_msg)
 
-                fix = incoming_msg.split(" ")[2]
+                file_encoding = incoming_msg.split("_", 2)[-1]
+                file_size = incoming_msg.split("_", 1)[-1].split("_", 1)[0]
+                print(file_encoding + " " + str(file_size))
+                self.BUFSIZ = int(file_size)
 
-                with open('newfile.' + fix, 'wb') as f:
-                    print('Recieving File, saved as %s ' % 'newfile.'+fix)
+                with open('newfile.' + file_encoding, 'wb') as f:
+                    print('Recieving File, saved as %s ' % 'newfile.'+file_encoding)
                     while True:
                         fil = self.sock.recv(self.BUFSIZ)
                         if fil[-4:] == bytes("done", 'utf8'):
@@ -58,14 +62,14 @@ class TCPClient:
     def sendFile(self, path, my_msg, event=None):
         target = my_msg.split(' ', 1)
         my_msg = my_msg + ' ' + str(path.split('.', 1)[-1])
-
         try:
             with open(path, 'rb') as f:
-                self.sock.send(bytes(my_msg, 'utf8'))
-                line = f.read(self.BUFSIZ)
-                while line:
-                    self.sock.sendall(line)
-                    line = f.read(self.BUFSIZ)
+                bf = f.read()
+                self.sock.sendall(bf, 0)
+                # line = f.read(self.BUFSIZ)
+                # while line:
+                #     self.sock.sendall(line)
+                #     line = f.read(self.BUFSIZ)
         except FileNotFoundError:
                     return f"File Not found and not sent to: {target[0]}"
                 
