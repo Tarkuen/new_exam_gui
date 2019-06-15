@@ -1,4 +1,5 @@
 import json
+import os
 
 import requests
 from socket import AF_INET, socket, SOCK_STREAM
@@ -23,22 +24,22 @@ class TCPClient:
         try:
             incoming_msg = self.sock.recv(self.BUFSIZ).decode('utf8')
             if incoming_msg.find("@file_") != -1:
-                print(incoming_msg)
 
                 file_encoding = incoming_msg.split("_", 2)[-1]
                 file_size = incoming_msg.split("_", 1)[-1].split("_", 1)[0]
                 print(file_encoding + " " + str(file_size))
                 self.BUFSIZ = int(file_size)
 
+                # os.chdir("STI TIL HVOR BILLEDET SKAL GEMMES")
                 with open('newfile.' + file_encoding, 'wb') as f:
                     print('Recieving File, saved as %s ' % 'newfile.'+file_encoding)
-                    while True:
-                        fil = self.sock.recv(self.BUFSIZ)
-                        if fil[-4:] == bytes("done", 'utf8'):
-                            f.write(fil[:-4])
-                            break
-                        else:
-                            f.write(fil)
+                    fil = self.sock.recv(self.BUFSIZ)
+                        # if fil[-4:] == bytes("done", 'utf8'):
+                        #     f.write(fil[:-4])
+                        #     break
+                        # else:
+                            # f.write(fil)
+                    f.write(fil)
                     f.close()
 
                 info = incoming_msg.split(" ", 1)

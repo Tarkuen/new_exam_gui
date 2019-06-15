@@ -123,51 +123,33 @@ class MyTCPServer:
 
     def handle_file(self, **kwargs):
         print("handle_file kaldt")
-
+        """ da keywordede private er seperat fra @file og derfor ligger det ansvar under handle_private. 
+        Indtil videre har vi håndteret det hér, ved at lede efter @file.
+        """
         client = kwargs.get('client')
         header = kwargs.get('msg')
 
         client = self.client_group[client]
 
         recievers = []
-        submsg = header[header.find('{') + 1: header.find('}')].split(',')
-
-        for t in submsg:
-            recievers.append(t.strip(',').strip(' '))
-
+        if header.find('{')!= -1 & header.find('}')!=-1:
+            submsg = header[header.find('{') + 1: header.find('}')].split(',')
+            for t in submsg:
+                recievers.append(t.strip(',').strip(' '))
+        else:
+            [recievers.append(c.username) for c in self.client_group]
+        
         file_size = int(header.split("_", 1)[-1].split("_", 1)[0])
         self.BUFSIZ = file_size
         file_encoding = str(header.split("_", 2)[-1])
         print("Size: " + str(file_size) + " bytes" + "  Fileencoding: " + file_encoding)
 
-        file = client.socket.recv(self.BUFSIZ)
-        print(file)
+        file_object = client.socket.recv(self.BUFSIZ)
 
-        [c.socket.send(bytes(header, 'utf8')) for rec in recievers for c in
-         self.client_group if c.username == str(rec)]
-
-        # [c.socket.send(file) for rec in recievers for c in self.client_group if c.username == str(rec)]
+        [c.socket.send(bytes(header, 'utf8')) for rec in recievers for c in self.client_group if c.username == str(rec)]
+        [c.socket.send(file_object) for rec in recievers for c in self.client_group if c.username == str(rec)]
 
         self.BUFSIZ = 1024
-
-        # for c in self.client_group:
-        #                 if c.username == target:
-        #                     username = f"{c.username}"
-        #                     keyword = str(self.keywords[1])
-        #                     target= f"{temp[2]}"
-        #                     msg = username+' '+keyword+' '+target
-        #                     c.socket.send(bytes( msg, "utf8"))
-
-        #                     print('routing data...')
-        #                     while True:
-        #                         fil = c.socket.recv(self.BUFSIZ)
-        #                         if fil[-4:] == bytes("done", 'utf8'):
-        #                             c.socket.send(fil[:-4])
-        #                             c.socket.send(bytes("done", 'utf8'))
-        #                             break
-        #                         else:
-        #                             c.socket.send(fil)
-        #                     print(f"Transferred file to {c.username} by type {temp[2]}")
 
         return "HANDLED FILE"
 
