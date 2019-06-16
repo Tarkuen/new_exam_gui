@@ -68,7 +68,6 @@ class MyTCPServer:
         while True:
             try:
                 msg = client.socket.recv(self.BUFSIZ).decode('utf8')
-                print(msg)
             except ConnectionResetError:
                 print("Connection Dropped on %s %s " % client.address)
                 self.handle_broadcast(msg=msg)
@@ -119,7 +118,10 @@ class MyTCPServer:
          self.client_group if c.username == str(rec)]
 
     def handle_quit(self, **kwargs):
-        pass
+        print("HANDLE QUIT CALLED")
+        client = kwargs.get('client')
+        client.socket.send(bytes('Goodbyte', 'utf8'))
+        del self.client_group[c]
 
     def handle_file(self, **kwargs):
         print("handle_file kaldt")
@@ -128,7 +130,6 @@ class MyTCPServer:
         """
         client = kwargs.get('client')
         header = kwargs.get('msg')
-        print(header)
         client = self.client_group[client]
 
         recievers = []
@@ -148,9 +149,7 @@ class MyTCPServer:
             [c.socket.send(bytes(header, 'utf8')) for rec in recievers for c in self.client_group if c.username == rec]
         except ConnectionResetError:
             pass
-
         file_object = client.socket.recv(self.BUFSIZ)
-        print(len(file_object))
         try:
             [c.socket.send(bytes(file_object)) for rec in recievers for c in self.client_group if c.username == rec]
         except ConnectionResetError:
@@ -159,47 +158,6 @@ class MyTCPServer:
         self.BUFSIZ = 1024
 
         return "HANDLED FILE"
-
-
-"""  # if msg.startswith('@'):
-            #     temp = msg.split(" ", 3)
-
-            #     if (temp[0] == self.keywords[0]):
-            #         client.close()
-            #         del self.client_group[c]
-
-            #     else:
-            #         target = temp[0].strip("@")
-
-            #         if temp[1] is not None and temp[1] == self.keywords[1]:
-
-            #             for c in self.client_group:
-            #                 if c.username == target:
-            #                     username = f"{c.username}"
-            #                     keyword = str(self.keywords[1])
-            #                     target= f"{temp[2]}"
-            #                     msg = username+' '+keyword+' '+target
-            #                     c.socket.send(bytes( msg, "utf8"))
-
-            #                     print('routing data...')
-            #                     while True:
-            #                         fil = c.socket.recv(self.BUFSIZ)
-            #                         if fil[-4:] == bytes("done", 'utf8'):
-            #                             c.socket.send(fil[:-4])
-            #                             c.socket.send(bytes("done", 'utf8'))
-            #                             break
-            #                         else:
-            #                             c.socket.send(fil)
-            #                     print(f"Transferred file to {c.username} by type {temp[2]}")
-            #         else:
-            #             for c in self.client_group:
-            #                 if c.username == target:
-            #                     msg = client.username + ': (PRIVATE) ' + msg
-            #                     c.socket.send(bytes(msg, "utf8"))
-
-            # else:
-            #     self.broadcast(msg, sender=client.username) """
-
 
 class Client:
 
