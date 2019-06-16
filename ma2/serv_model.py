@@ -71,12 +71,12 @@ class MyTCPServer:
                 msg = client.socket.recv(self.BUFSIZ).decode('utf8')
             except ConnectionResetError:
                 print("Connection Dropped on %s %s " % client.address)
-                if not msg:
-                    self.handle_broadcast(msg='', sender='[+] ADMIN')
-                else:
-                    self.handle_broadcast(msg=msg, sender='[+] ADMIN')
-                del self.client_group[c]
-                break
+            if not msg:
+                self.handle_broadcast(msg='', sender='[+] ADMIN')
+            else:
+                self.handle_broadcast(msg=msg, sender='[+] ADMIN')
+            del self.client_group[c]
+            break
             
             except UnicodeDecodeError:
                 print(f'invalid message ')

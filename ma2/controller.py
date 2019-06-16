@@ -27,12 +27,12 @@ class TCPController:
         msg = self.view.my_msg.get()
 
         for k, v in self.keywords.items():
-            if msg.find(k) != -1:
+            if k in msg:
                 keyword_method = getattr(self, str(v))(msg=msg)
  
         self.view.my_msg.set("")
 
-    def handle_quit(self):
+    def handle_quit(self, **kwargs):
         self.model.shutdown()
         self.view.top.quit()
 
