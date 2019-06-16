@@ -48,6 +48,7 @@ class MyTCPServer:
 
         try:
             username = client.socket.recv(self.BUFSIZ).decode("utf-8")
+            username = username.strip('@broadcast ')
         except ConnectionResetError:
             return
 

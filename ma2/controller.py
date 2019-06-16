@@ -26,32 +26,48 @@ class TCPController:
 
         msg = self.view.my_msg.get()
 
-        if msg == "@quit":
-            self.model.shutdown()
-            self.view.top.quit()
-
-        else:
-            if '@file' in msg:
-                path = self.view.openfile()
-                file_size = os.path.getsize(path)
-                file_encoding = str(path.split('.', 1)[-1])
-                file_msg = msg + "_" + str(file_size) + "_" + file_encoding
-
-                self.model.send(file_msg)
-                
-                a = self.model.sendFile(path=path, my_msg=msg)
-                self.view.msg_list.insert(tk.END, a)
-            else:
-                a = self.model.send(msg)
-                if a == -1:
-                    self.view.top.destroy()
-
+        for k, v in self.keywords.items():
+            if msg.find(k) != -1:
+                keyword_method = getattr(self, str(v))(msg=msg)
+ 
         self.view.my_msg.set("")
+
+    def handle_quit(self):
+        self.model.shutdown()
+        self.view.top.quit()
+
+    def handle_broadcast(self, **kwargs):
+        if (kwargs.__contains__('msg')):
+            msg = kwargs.get('msg')
+        else:
+            msg = ''
+
+
+        a = self.model.send(msg)
+        if a == -1:
+            self.view.top.destroy()
+
+    def handle_file(self, **kwargs):
+        if (kwargs.__contains__('msg')):
+            msg = kwargs.get('msg')
+        else:
+            msg = ''
+
+        path = self.view.openfile()
+        file_size = os.path.getsize(path)
+        file_encoding = str(path.split('.', 1)[-1])
+        file_msg = msg + "_" + str(file_size) + "_" + file_encoding
+
+        self.model.send(file_msg)
+        a = self.model.sendFile(path=path, my_msg=msg)
+        self.view.msg_list.insert(tk.END, a)
 
     def recieve(self):
 
         protocol = str( [(k+' ') for k  in self.keywords.keys()])
-        self.view.msg_list.insert(tk.END, "Current protocols are: "+ protocol)
+        self.view.msg_list.insert(tk.END, f"Current protocols are: {protocol}")
+        self.view.msg_list.insert(tk.END, "Private Messages are sent with { TARGET USER, TARGET...} after protocol keyword")
+        self.view.msg_list.insert(tk.END, "Select a username with '@broadcast USERNAME' with no spaces")
         while True:
             msg = self.model.receive()
             if msg == -1:
