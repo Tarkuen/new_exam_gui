@@ -72,8 +72,11 @@ class MyTCPServer:
                 print("Connection Dropped on %s %s " % client.address)
                 self.handle_broadcast(msg=msg)
                 del self.client_group[c]
-
                 break
+            
+            except UnicodeDecodeError:
+                print(f'invalid message ')
+                pass
 
             for k, v in self.keywords.items():
                 if msg.find(k) != -1:
@@ -121,7 +124,7 @@ class MyTCPServer:
         print("HANDLE QUIT CALLED")
         client = kwargs.get('client')
         client.socket.send(bytes('Goodbyte', 'utf8'))
-        del self.client_group[c]
+        del self.client_group[client]
 
     def handle_file(self, **kwargs):
         print("handle_file kaldt")
@@ -144,12 +147,16 @@ class MyTCPServer:
         self.BUFSIZ = file_size
         file_encoding = str(header.split("_", 2)[-1])
         print("Size: " + str(file_size) + " bytes" + "  Fileencoding: " + file_encoding)
-
+        print('sending header')
         try:
             [c.socket.send(bytes(header, 'utf8')) for rec in recievers for c in self.client_group if c.username == rec]
         except ConnectionResetError:
             pass
+
+        print('listening for file object')
         file_object = client.socket.recv(self.BUFSIZ)
+        print(f'sending file object of length {len(file_object)}')
+
         try:
             [c.socket.send(bytes(file_object)) for rec in recievers for c in self.client_group if c.username == rec]
         except ConnectionResetError:

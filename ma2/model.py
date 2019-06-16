@@ -23,23 +23,22 @@ class TCPClient:
 
         try:
             incoming_msg = self.sock.recv(self.BUFSIZ)
-            print("IN RECIEVE")
-            print(incoming_msg)
             if '@file' in incoming_msg.decode('utf8'):
-                print('INFILE')
+                print('infile')
                 incoming_msg = incoming_msg.decode('utf8')
+
                 file_encoding = incoming_msg.split("_", 2)[-1]
-                print(file_encoding)
                 file_size = incoming_msg.split("_", 1)[-1].split("_", 1)[0]
-                
-                self.BUFSIZ = int(file_size)
                 print(self.BUFSIZ)
+                self.BUFSIZ = int(file_size)
 
                 fil = self.sock.recv(self.BUFSIZ)
                 fil = self.sock.recv(self.BUFSIZ)
+
                 # os.chdir("STI TIL HVOR BILLEDET SKAL GEMMES")
+
                 with open(f"newfile.{file_encoding}", 'wb') as f:
-                    print(f"Recieving File, saved as newfile.{file_encoding}")
+                    print(f"Recieving File, saved as newfile.{file_encoding} of size {self.BUFSIZ}")
                     f.write(fil)
                     f.close()
 

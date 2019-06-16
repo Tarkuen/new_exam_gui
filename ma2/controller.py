@@ -31,15 +31,14 @@ class TCPController:
             self.view.top.quit()
 
         else:
-            if msg.find("@file") != -1:
+            if '@file' in msg:
                 path = self.view.openfile()
                 file_size = os.path.getsize(path)
                 file_encoding = str(path.split('.', 1)[-1])
                 file_msg = msg + "_" + str(file_size) + "_" + file_encoding
 
-
-                print(file_msg)
                 self.model.send(file_msg)
+                
                 a = self.model.sendFile(path=path, my_msg=msg)
                 self.view.msg_list.insert(tk.END, a)
             else:

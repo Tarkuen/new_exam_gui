@@ -15,10 +15,10 @@ class testTCPClient(unittest.TestCase):
     def test(self):
         self.sock1 = socket(AF_INET, SOCK_STREAM)
         self.sock1.connect(self.ADDR)
-        self.sock1.close()
 
 
 if __name__ == "__main__":
+    # TCPController()
     result = unittest.main(exit=False)
     if result.result.wasSuccessful():
         TCPController()
