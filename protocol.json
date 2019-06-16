@@ -1,5 +1,4 @@
 {
-    "{":"handle_private",
     "@quit":"handle_quit",
     "@file":"handle_file",
     "@broadcast":"handle_broadcast"

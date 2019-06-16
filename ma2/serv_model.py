@@ -58,7 +58,7 @@ class MyTCPServer:
         client.socket.send(bytes(msg, 'utf8'))
 
         client.username = username
-        self.handle_broadcast(msg=msg)
+        self.handle_broadcast(msg=msg, sender='[+] ADMIN ')
 
         Thread(target=self.client_handler, args=(client,)).start()
 
@@ -70,7 +70,10 @@ class MyTCPServer:
                 msg = client.socket.recv(self.BUFSIZ).decode('utf8')
             except ConnectionResetError:
                 print("Connection Dropped on %s %s " % client.address)
-                self.handle_broadcast(msg=msg)
+                if not msg:
+                    self.handle_broadcast(msg='', sender='[+] ADMIN')
+                else:
+                    self.handle_broadcast(msg=msg, sender='[+] ADMIN')
                 del self.client_group[c]
                 break
             
@@ -81,44 +84,62 @@ class MyTCPServer:
             for k, v in self.keywords.items():
                 if msg.find(k) != -1:
                     try:
-                        getattr(self, str(v))(msg=msg, client=client, sender=client.username)
+                        keyword_method = getattr(self, str(v))
                     except AssertionError:
                         client.socket.send(bytes("Not following protocol", "utf8"))
+                    keyword_method(msg=msg, client=client)
 
     def handle_broadcast(self, **kwargs):
-        msg = kwargs.get('msg')
-        if kwargs.__contains__('sender'):
-            sender = kwargs.get('sender')
+        recievers = []
 
+        if kwargs.__contains__('msg'):
+            msg = kwargs.get('msg')
+            if '@broadcast' in msg:
+                msg = msg.strip('@broadcast')
+
+        if kwargs.__contains__('client'):
+            client = kwargs.get('client')
+            msg, recievers = self.handle_private(msg=msg, client=client)
         else:
-            sender = "[+] ADMIN"
+            msg, recievers = self.handle_private(msg=msg, sender=kwargs.get('sender'))
 
-        totalmsg = f"{sender} : {msg}"
-        for client in self.client_group:  # Sender beskeden til alle klienter
-            try:
-                client.socket.send(bytes(totalmsg, 'utf8'))
-            except ConnectionResetError:
-                continue
+        try:
+            [client.socket.send(bytes(msg, 'utf8')) for rec in recievers for client in self.client_group if client.username == rec]
+        except ConnectionResetError:
+            pass
+
 
     def handle_private(self, **kwargs):
-        print("handle_private kaldt")
+        if kwargs.__contains__('msg'):   
+            msg = kwargs.get('msg')
+        assert msg != None
 
-        msg = kwargs.get('msg')
-        client = kwargs.get('client')
+        if kwargs.__contains__('client'):
+            client = kwargs.get('client')
+            sender = client.username
+        
+        else:
+            if kwargs.__contains__('sender'):
+                sender = kwargs.get('sender')
 
-        assert msg.find('{') != -1
-        assert msg.find('}') != -1
         recievers = []
-        submsg = msg[msg.find('{') + 1: msg.find('}')].split(',')
 
-        for t in submsg:
-            recievers.append(t.strip(',').strip(' '))
+        if msg.find('{') != -1 & msg.find('}') != -1:
+            submsg = msg[msg.find('{') + 1: msg.find('}')].split(',')
 
-        submsg1 = msg[:msg.find('{')]
-        submsg = msg[msg.find('}') + 1:]
-        submsg = submsg1 + submsg
-        [c.socket.send(bytes(client.username + ": (PRIVATE) " + submsg, 'utf8')) for rec in recievers for c in
-         self.client_group if c.username == str(rec)]
+            for t in submsg:
+                recievers.append(t.strip(',').strip(' '))
+
+            submsg1 = msg[:msg.find('{')]
+            submsg = msg[msg.find('}') + 1:]
+            submsg = f"{sender} : (PRIVATE) {submsg1}{submsg}"
+
+            return submsg, recievers
+
+        else:
+            [recievers.append(c.username) for c in self.client_group if c.username != '']
+            msg = f"{sender} : {msg}"
+            return msg, recievers
 
     def handle_quit(self, **kwargs):
         print("HANDLE QUIT CALLED")
@@ -134,26 +155,21 @@ class MyTCPServer:
         client = kwargs.get('client')
         header = kwargs.get('msg')
         client = self.client_group[client]
-
         recievers = []
-        if header.find('{')!= -1 & header.find('}')!=-1:
-            submsg = header[header.find('{') + 1: header.find('}')].split(',')
-            for t in submsg:
-                recievers.append(t.strip(',').strip(' '))
-        else:
-            [recievers.append(c.username) for c in self.client_group]
+
+        header, recievers = self.handle_private(msg=header, client=client) 
         
         file_size = int(header.split("_", 1)[-1].split("_", 1)[0])
         self.BUFSIZ = file_size
         file_encoding = str(header.split("_", 2)[-1])
         print("Size: " + str(file_size) + " bytes" + "  Fileencoding: " + file_encoding)
-        print('sending header')
+        print(f'sending header: {header}')
+
         try:
             [c.socket.send(bytes(header, 'utf8')) for rec in recievers for c in self.client_group if c.username == rec]
         except ConnectionResetError:
             pass
 
-        print('listening for file object')
         file_object = client.socket.recv(self.BUFSIZ)
         print(f'sending file object of length {len(file_object)}')
 
@@ -163,7 +179,6 @@ class MyTCPServer:
             pass
 
         self.BUFSIZ = 1024
-
         return "HANDLED FILE"
 
 class Client:

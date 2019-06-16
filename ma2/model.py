@@ -29,14 +29,11 @@ class TCPClient:
 
                 file_encoding = incoming_msg.split("_", 2)[-1]
                 file_size = incoming_msg.split("_", 1)[-1].split("_", 1)[0]
-                print(self.BUFSIZ)
+                
                 self.BUFSIZ = int(file_size)
-
-                fil = self.sock.recv(self.BUFSIZ)
                 fil = self.sock.recv(self.BUFSIZ)
 
                 # os.chdir("STI TIL HVOR BILLEDET SKAL GEMMES")
-
                 with open(f"newfile.{file_encoding}", 'wb') as f:
                     print(f"Recieving File, saved as newfile.{file_encoding} of size {self.BUFSIZ}")
                     f.write(fil)
